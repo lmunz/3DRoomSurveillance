@@ -7,7 +7,10 @@ using namespace std;
 using namespace cv;
 using namespace ppf_match_3d;
 Mat pc;
+int i = 0;
 int64 tick1, tick2;
+vector<Pose3DPtr> matchingResult;
+ppf_match_3d::PPF3DDetector detector(0.025, 0.05);
 
 
 static void help(const string& errorMessage)
@@ -17,30 +20,28 @@ static void help(const string& errorMessage)
     cout << "\nPlease start again with new parameters" << endl;
 }
 
-PPF3DDetector modellTraining()
+void modellTraining()
 {
-    // Now train the model
     cout << "Training..." << endl;
-    tick1 = cv::getTickCount();
-    ppf_match_3d::PPF3DDetector detector(0.025, 0.05);
     detector.trainModel(pc);
-    tick2 = cv::getTickCount();
-    cout << endl << "Training complete in "
-        << (double)(tick2 - tick1) / cv::getTickFrequency()
-        << " sec" << endl << "Loading model..." << endl;
-    return detector;
 }
 
-vector<Pose3DPtr> matching(int argc, char** argv) {
+void loadModel(int argc, char** argv) {
+    string modelFileName = (string)argv[1];
+
+    pc = loadPLYSimple(modelFileName.c_str(), 1);
+
+}
+void matching(int argc, char** argv) {
     // welcome message
-    cout << "****************************************************" << endl;
-    cout << "* Surface Matching demonstration : demonstrates the use of surface matching"
-        " using point pair features." << endl;
-    cout << "* The sample loads a model and a scene, where the model lies in a different"
-        " pose than the training.\n* It then trains the model and searches for it in the"
-        " input scene. The detected poses are further refined by ICP\n* and printed to the "
-        " standard output." << endl;
-    cout << "****************************************************" << endl;
+    //cout << "****************************************************" << endl;
+    //cout << "* Surface Matching demonstration : demonstrates the use of surface matching"
+    //    " using point pair features." << endl;
+    //cout << "* The sample loads a model and a scene, where the model lies in a different"
+    //    " pose than the training.\n* It then trains the model and searches for it in the"
+    //    " input scene. The detected poses are further refined by ICP\n* and printed to the "
+    //    " standard output." << endl;
+    //cout << "****************************************************" << endl;
 
     //if (argc < 3)
     //{
@@ -59,27 +60,19 @@ vector<Pose3DPtr> matching(int argc, char** argv) {
 #else
     cout << "Running without OpenMP and without TBB" << endl;
 #endif
-    string modelFileName = (string)argv[1];
+
     string sceneFileName = (string)argv[2];
 
-    pc = loadPLYSimple(modelFileName.c_str(), 1);
-
-
-    // Read the scene
     Mat pcTest = loadPLYSimple(sceneFileName.c_str(), 1);
-
-    // Now train the model
-
-    cout << "Training..." << endl;
-    tick1 = cv::getTickCount();
-    ppf_match_3d::PPF3DDetector detector(0.025, 0.05);
-    detector.trainModel(pc);
-    tick2 = cv::getTickCount();
-    cout << endl << "Training complete in "
-        << (double)(tick2 - tick1) / cv::getTickFrequency()
-        << " sec" << endl << "Loading model..." << endl;
-  
-    //PPF3DDetector detector = modellTraining();
+    //cout << "Training..." << endl;
+    //tick1 = cv::getTickCount();
+    //ppf_match_3d::PPF3DDetector detector(0.025, 0.05);
+    //detector.trainModel(pc);
+    //tick2 = cv::getTickCount();
+    //cout << endl << "Training complete in "
+    //    << (double)(tick2 - tick1) / cv::getTickFrequency()
+    //    << " sec" << endl << "Loading model..." << endl;
+   
 
     // Match the model to the scene and get the pose
     cout << endl << "Starting matching..." << endl;
@@ -91,7 +84,7 @@ vector<Pose3DPtr> matching(int argc, char** argv) {
         (tick2 - tick1) / cv::getTickFrequency() << " sec" << endl;
 
     // Get only first N results
-    int N = 2;
+    int N = 2; 
     vector<Pose3DPtr> resultsSub(results.begin(), results.begin() + N);
 
     // Create an instance of ICP
@@ -116,51 +109,52 @@ vector<Pose3DPtr> matching(int argc, char** argv) {
 
         if (i == 0)
         {
-            Mat pct = transformPCPose(pc, result->pose);
-            writePLY(pct, "para6700PCTrans.ply");
+            Mat pctemp = pc;
+            Mat pct = transformPCPose(pctemp, result->pose);
+            //writePLY(pct, "para6700PCTrans.ply");
         }
 
     }
-    return resultsSub;
+    matchingResult = resultsSub;
 }
 
 
 int matchingausfuehren(int argc, char** argv) {
 
-        vector<Pose3DPtr> matchingResult = matching(argc, argv);
+    matching(argc, argv);
 
-        for (size_t i = 0; i < matchingResult.size(); i++) {
+    for (size_t i = 0; i < matchingResult.size(); i++) {
 
         cout << matchingResult[i]->modelIndex << endl;
     }
-        if (matchingResult[0]->modelIndex > 0) {
-            return 1;
-        }
-        else return 0;
+    if (matchingResult[0]->modelIndex > 0) {
+        return 1;
     }
+    else return 0;
+}
 
-    int main(int argc, char** argv)
-    {
-
-
-
-        //argv[1] = "E:\\resources\\parasaurolophus_6700.ply";
-        argv[1] = "E:\\resources\\Crankshaft.ply";
-        argv[2] = "E:\\resources\\rs1_normals.ply";
-        int temp1 = matchingausfuehren(argc, argv);
-
-        argv[1] = "E:\\resources\\parasaurolophus_6700.ply";
-        argv[2] = "E:\\resources\\parasaurolophus_low_normals2.ply";
-
-        int temp2 = matchingausfuehren(argc, argv);
-
-        if (temp1 == temp2) {
-            cout << "Keine Veraenderung" << endl;
-        }
-        else
-            cout << "OMG eine Veraenderung" << endl;
+int main(int argc, char** argv)
+{
 
 
-        return 0;
+    argv[1] = "E:\\resources\\parasaurolophus_6700.ply";
+    argv[2] = "E:\\resources\\rs22_proc2.ply";
+    loadModel(argc, argv);
+    modellTraining();
+
+    int temp1 = matchingausfuehren(argc, argv);
+ 
+    argv[2] = "E:\\resources\\rs22_proc2.ply";
+
+
+    int temp2 = matchingausfuehren(argc, argv);
+
+    if (temp1 == temp2) {
+        cout << "Keine Veraenderung" << endl;
     }
+    else
+        cout << "OMG eine Veraenderung" << endl;
 
+
+    return 0;
+}
