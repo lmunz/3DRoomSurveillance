@@ -4,55 +4,60 @@
 #include "open3d/Open3D.h"
 #include "open3d/geometry/PointCloud.h"
 #include "open3d/geometry/TriangleMesh.h"
+#include <thread>
+#include <stdlib.h>
 
 using namespace std;
 using namespace cv;
+char* argv[3];
 using namespace open3d;
 
-int main(int argc, char* argv[]) {
-    open3d::geometry::PointCloud pcd1;
-    open3d::geometry::PointCloud pcd2;
 
-    open3d::io::ReadPointCloud("C:\\Users\\merle\\Documents\\capturePLY\\save\\scenes\\four_objects\\depth_to_color.ply", pcd1);
-    //open3d::io::ReadPointCloud("C:\\Users\\merle\\Documents\\capturePLY\\save\\scenes\\four_objects\\depth_to_color.ply", pcd2);
-    open3d::io::ReadPointCloud("C:\\Users\\merle\\Documents\\capturePLY\\save\\scenes\\without_bunny\\depth_to_color.ply", pcd2);
+int matching(int z)
+{
+    {
 
-    const Eigen::Vector3d orientationPoint = Eigen::Vector3d(0.0, 0.0, -1.0);
+        open3d::geometry::PointCloud pcd1;
+        open3d::geometry::PointCloud pcd2;
 
-    pcd1.EstimateNormals();
-    pcd1.NormalizeNormals();
-    pcd1.OrientNormalsToAlignWithDirection(orientationPoint);
+        open3d::io::ReadPointCloud(argv[0], pcd1);
+        //open3d::io::ReadPointCloud("E:\\resources\\withoutFaces\\four_objects.ply", pcd2);
 
-    pcd2.EstimateNormals();
-    pcd2.NormalizeNormals();
-    pcd2.OrientNormalsToAlignWithDirection(orientationPoint);
+        open3d::io::ReadPointCloud(argv[z], pcd2);
 
 
-    if (pcd1.HasNormals()) {
-        std::cout << "True Normals, PCD1" << std::endl;
+        auto dis_pcd1_pcd2 = pcd1.ComputePointCloudDistance(pcd2);
+
+        //std::cout << "Value 1: " << dis_pcd1_pcd2[0] << std::endl;
+        //std::cout << "Value 2: " << dis_pcd1_pcd2[1] << std::endl;
+
+        if (dis_pcd1_pcd2[0] == 0 && dis_pcd1_pcd2[1] == 0) {
+            std::cout << "   Keine Veraenderungen in Thread" + z << std::endl;
+            std::cout << "\n" << std::endl;
+            return 0;
+        }
+        else {
+            std::cout << "   Veraenderungen in Thread" + z << std::endl;
+            std::cout << "\n" << std::endl;
+            return 1;
+        }
     }
-    else {
-        std::cout << "False Normals, PCD1" << std::endl;
-    }
+}
 
-    if (pcd2.HasNormals()) {
-        std::cout << "True Normals, PCD2" << std::endl;
-    }
-    else {
-        std::cout << "False Normals, PCD2" << std::endl;
-    }
+int main() {
+    
+    argv[0] = "E:\\resources\\depth_three_objects.ply";
+    argv[1] = "E:\\resources\\depth_three_objects.ply";
+    argv[2] = "E:\\resources\\depth_no_weight.ply";
 
-    auto dis_pcd1_pcd2 = pcd1.ComputePointCloudDistance(pcd2);
+    thread th1(matching, 1);
+    //Sleep(10000);
+    thread th2(matching, 2);
 
-    std::cout << "Value 1: " << dis_pcd1_pcd2[0] << std::endl;
-    std::cout << "Value 2: " << dis_pcd1_pcd2[1] << std::endl;
+    th1.join();
+    th2.join();
 
-    if (dis_pcd1_pcd2[0] == 0 && dis_pcd1_pcd2[1] == 0) {
-        std::cout << "Keine Veraenderungen" << std::endl;
-    }
-    else {
-        std::cout << "Veraenderungen" << std::endl;
-    }
+
 
     return 0;
 }
