@@ -47,7 +47,7 @@ namespace NavigationDrawerPopUpMenu2
         new Videos("/Assets/2.jpg"),
         new Videos("/Assets/3.jpg"),
         new Videos("/Assets/4.jpg"),
-         new Videos("/Assets/2.jpg"),
+        new Videos("/Assets/2.jpg"),
         new Videos("/Assets/3.jpg"),
         new Videos("/Assets/4.jpg"),
         new Videos("/Assets/1.jpg"),
@@ -57,5 +57,7 @@ namespace NavigationDrawerPopUpMenu2
 
       };
         }
+
+
     }
 }

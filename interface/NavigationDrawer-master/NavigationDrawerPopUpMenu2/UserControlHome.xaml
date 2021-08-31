@@ -7,6 +7,11 @@
              mc:Ignorable="d" 
              Background="Aquamarine">
     <Grid>
-            
+        <Grid.RowDefinitions>
+            <RowDefinition Height="11*"/>
+            <RowDefinition Height="9*"/>
+        </Grid.RowDefinitions>
+        <Image Name="displayImg" HorizontalAlignment="Left" VerticalAlignment="Top" Width="720" Height="360"/>
+        <Button Name="btnDepthmap" Click="BtnDepthmap_Click" Background="#1abc9c" Content="Tiefenansicht" HorizontalAlignment="Right" Margin="9,14,20,20" VerticalAlignment="Bottom" Width="200"/>
     </Grid>
 </UserControl>

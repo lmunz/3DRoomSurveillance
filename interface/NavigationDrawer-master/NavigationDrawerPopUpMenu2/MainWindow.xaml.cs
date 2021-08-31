@@ -14,6 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace NavigationDrawerPopUpMenu2
+
 {
     /// <summary>
     /// Interação lógica para MainWindow.xam
@@ -56,5 +57,7 @@ namespace NavigationDrawerPopUpMenu2
                     break;
             }
         }
+
+
     }
 }
