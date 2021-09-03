@@ -100,7 +100,7 @@ Exit:
 }
 
 static int capture(std::string output_dir, k4a_device_t device, k4a_calibration_t calibration) //k4a_device????
-//{
+{
 //    std::cout << "start" << std::endl;
 //    int returnCode = 1;
 //
@@ -192,8 +192,10 @@ int main(int argc, char* argv[])
 
         time_t timer;
         time_t old_timer;
+        time_t join_timer;
 
         time(&old_timer);
+        time(&join_timer);
 
         while (true) {
             // Update
@@ -252,16 +254,19 @@ int main(int argc, char* argv[])
                 file_name = output_dir + "/depth_to_color.ply";
 #endif
                 thread th1(getPointCloud, transformation, depth_image, color_image, file_name);
-                th1.join();
+                th1.detach();
+                //if (difftime(timer, join_timer) == 20) {
+                //    th1.join();
+                //    join_timer = timer;
+                //}
                 std::cout << "point" << std::endl;
-
-
-                //async(std::launch::async, capture, temp_filename, kinect.device.handle(), kinect.calibration);
+                //async(getPointCloud, transformation, depth_image, color_image, file_name);
                 old_timer = timer;
                 i++;
+                
             }
 
-
+            
             // Wait Key
             constexpr int32_t delay = 30;
             const int32_t key = cv::waitKey(delay);
