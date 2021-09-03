@@ -206,7 +206,7 @@ static int matching(string file_pc) {
         string file1 = pcArray[0];
         string file2 = pcArray[1];
 
-        matchResult = system(("C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\executable\\PointCloudMatching.exe \" " + pcArray[0] + "\"" + pcArray[1]).c_str());
+        matchResult = system(("C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\executable\\PointCloudMatching.exe \" " + pcArray[0] + "\" HelloWorld \"" + pcArray[1]).c_str());
     }
     else {
         matchResult = 3;
@@ -243,7 +243,7 @@ static int matching(string file_pc) {
 int main(int argc, char* argv[])
 {
     try { 
-        string filename = "C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\pointClouds\\pc"; //".\\pointClouds\\pc";
+        string filename = "C:/Users/merle/Documents/Projekte/3DRoomSurveillance/pointClouds/pc"; //".\\pointClouds\\pc";
         kinect kinect;
         int i = 1;
         bool working = false;

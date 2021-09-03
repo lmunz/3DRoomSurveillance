@@ -24,7 +24,7 @@ int matching(char* files[])
 
         open3d::io::ReadPointCloud(files[1], pcd1);
 
-        open3d::io::ReadPointCloud(files[2], pcd2);
+        open3d::io::ReadPointCloud(files[3], pcd2);
 
         auto dis_pcd1_pcd2 = pcd1.ComputePointCloudDistance(pcd2);
 
@@ -47,40 +47,14 @@ int matching(char* files[])
     }
 }
 
-std::vector<std::string> split(std::string const& input, std::string const& separator = " ")
-{
-    std::vector<std::string> result;
-    std::string::size_type position, start = 0;
-
-    while (std::string::npos != (position = input.find(separator, start)))
-    {
-        result.push_back(input.substr(start, position - start));
-        start = position + separator.size();
-    }
-
-    result.push_back(input.substr(start));
-    return result;
-}
-
+// Aus einzelnen / doppelte machen //
 int main(int argc, char* argv[]) {
 
     cout << argc << endl;
     cout << argv[0] << endl;
     cout << "Argv 1 " << argv[1] << endl;
     cout << "Argv 2 " << argv[2] << endl;
-
-
-
-    std::vector<std::string> v = split(argv[1], ".ply");
-
-    std::string s;
-    for (std::vector<std::string>::const_iterator i = v.begin(); i != v.end(); ++i)
-        s += *i;
-
-    //std::string str(splited.begin(), splited.end() - 1);
-
-    //cout << "Split 1 " << splited[0] << " + " << splited[1] << endl;
-    cout << "S " << s << endl;
+    cout << "Argv 3 " << argv[3] << endl;
 
     if (argc > 1) {
         return matching(argv);
