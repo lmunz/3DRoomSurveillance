@@ -6,13 +6,14 @@
 #include <string>
 #include <semaphore>
 #include <Windows.h>
-//#include "timercpp-master/timercpp.h"
 #include <time.h>
 #include <vector>
 #include <algorithm>
 #include <numeric>
 #include <future>
 #include <mutex>
+#include <process.h>
+#include <stdio.h>
 
 #include "opencv2/core/utility.hpp"
 #include <k4a/k4a.h>
@@ -22,6 +23,8 @@
 
 
 using namespace std;
+
+string pcArray[2];
 
 static bool point_cloud_depth_to_color(k4a_transformation_t transformation_handle,
     const k4a_image_t depth_image,
@@ -181,6 +184,62 @@ static int capture(std::string output_dir, k4a_device_t device, k4a_calibration_
 //    return returnCode;
 }
 
+static int matching(string file_pc) {
+
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+    
+    int matchResult = 6;
+    int size = sizeof(pcArray);
+
+    if (pcArray[0] == "") {
+        pcArray[0] = file_pc;
+        matchResult = 3;
+    }
+    else if (pcArray[1] == "") {
+        pcArray[1] = file_pc;
+
+        string file1 = pcArray[0];
+        string file2 = pcArray[1];
+
+        matchResult = system(("C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\executable\\PointCloudMatching.exe \" " + pcArray[0] + "\"" + pcArray[1]).c_str());
+    }
+    else {
+        matchResult = 3;
+    }
+
+    //cout << matchResult << endl;
+
+    switch (matchResult) {
+    case 0:
+        return 0;
+        break;
+    case 1:
+        pcArray[0] = pcArray[1];
+        pcArray[1] = "";
+        return 0;
+        break;
+    case 2:
+        pcArray[0] = pcArray[1];
+        pcArray[1] = "";
+        return 1;
+        break;
+    case 3:
+        return 2;
+        break;
+    default:
+        pcArray[0] = "";
+        pcArray[1] = "";
+        return 6;
+        break;
+    }
+    
+}
+
 int main(int argc, char* argv[])
 {
     try { 
@@ -208,7 +267,7 @@ int main(int argc, char* argv[])
 
             time(&timer);
 
-            if (difftime(timer, old_timer) == 30) {
+            if (difftime(timer, old_timer) == 10) {
                 string output_dir = filename + std::to_string(i);
 
                 std::cout << "start" << std::endl;
@@ -262,6 +321,8 @@ int main(int argc, char* argv[])
                 //async(getPointCloud, transformation, depth_image, color_image, file_name);
                 old_timer = timer;
                 i++;
+
+                cout << "Main " << matching(file_name) << endl;
                 
             }
 
