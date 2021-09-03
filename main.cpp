@@ -1,14 +1,28 @@
 #include <iostream>
 #include <sstream>
+#include <stdlib.h>
+#include <thread>
 #include "kinect.hpp"
+#include <string>
+#include <semaphore>
+#include <Windows.h>
+//#include "timercpp-master/timercpp.h"
+#include <time.h>
+#include <vector>
+#include <algorithm>
+#include <numeric>
+#include <future>
+#include <mutex>
 
+
+#include "opencv2/core/utility.hpp"
 #include <k4a/k4a.h>
 #include <k4arecord/playback.h>
 #include <string>
 #include "transformation_helpers.h"
 
 
-
+using namespace std;
 
 static bool point_cloud_depth_to_color(k4a_transformation_t transformation_handle,
     const k4a_image_t depth_image,
@@ -16,12 +30,9 @@ static bool point_cloud_depth_to_color(k4a_transformation_t transformation_handl
     std::string file_name)
 {
 
-    std::cout << "Inside" << std::endl;
     // transform color image into depth camera geometry
     int color_image_width_pixels = k4a_image_get_width_pixels(color_image);
     int color_image_height_pixels = k4a_image_get_height_pixels(color_image);
-
-    std::cout << color_image_width_pixels << std::endl;
 
     k4a_image_t transformed_depth_image = NULL;
     if (K4A_RESULT_SUCCEEDED != k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16,
@@ -66,23 +77,39 @@ static bool point_cloud_depth_to_color(k4a_transformation_t transformation_handl
     k4a_image_release(transformed_depth_image);
     k4a_image_release(point_cloud_image);
 
-    std::cout << "Capture" << std::endl;
-
     return true;
 }
 
-static int capture(std::string output_dir, k4a_device_t device, k4a_calibration_t calibration, uint8_t deviceId = K4A_DEVICE_DEFAULT) //k4a_device????
+static int getPointCloud(k4a_transformation_t transformation, k4a_image_t depth_image, k4a_image_t color_image, string file_name) {
+    int returnCode = 1;
+
+    if (point_cloud_depth_to_color(transformation, depth_image, color_image, file_name.c_str()) == false)
+    {
+        std::cout << "Capture" << std::endl;
+        goto Exit;
+    }
+
+Exit:
+    if (transformation != NULL)
+    {
+        k4a_transformation_destroy(transformation);
+    }
+    std::cout << "exit" << std::endl;
+
+    return returnCode;
+}
+
+static int capture(std::string output_dir, k4a_device_t device, k4a_calibration_t calibration) //k4a_device????
 {
+    std::cout << "start" << std::endl;
     int returnCode = 1;
 
     const int32_t TIMEOUT_IN_MS = 10000;
     k4a_transformation_t transformation = NULL;
     k4a_capture_t capture = NULL;
     std::string file_name = "";
-   
     k4a_image_t depth_image = NULL;
     k4a_image_t color_image = NULL;
-    k4a_image_t color_image_downscaled = NULL;
 
     //k4a_calibration_t calibration;
     //if (K4A_RESULT_SUCCEEDED !=
@@ -102,10 +129,10 @@ static int capture(std::string output_dir, k4a_device_t device, k4a_calibration_
         break;
     case K4A_WAIT_RESULT_TIMEOUT:
         printf("Timed out waiting for a capture\n");
-        goto Exit;
+        //goto Exit;
     case K4A_WAIT_RESULT_FAILED:
         printf("Failed to read a capture\n");
-        goto Exit;
+        //goto Exit;
     }
 
     // Get a depth image
@@ -113,63 +140,60 @@ static int capture(std::string output_dir, k4a_device_t device, k4a_calibration_
     if (depth_image == 0)
     {
         printf("Failed to get depth image from capture\n");
-        goto Exit;
+        //goto Exit;
     }
-
+    std::cout << "depth" << std::endl;
     // Get a color image
     color_image = k4a_capture_get_color_image(capture);
     if (color_image == 0)
     {
         printf("Failed to get color image from capture\n");
-        goto Exit;
+        //goto Exit;
     }
-
+    std::cout << "color" << std::endl;
     // Compute color point cloud by warping depth image into color camera geometry
 #ifdef _WIN32
     file_name = output_dir + ".ply";
-    std::cout << file_name << std::endl;
 #else
     file_name = output_dir + "/depth_to_color.ply";
 #endif
-    if (point_cloud_depth_to_color(transformation, depth_image, color_image, file_name.c_str()) == false)
-    {
-        std::cout << "Capture" << std::endl;
-        goto Exit;
-    }
-
-Exit:
-    if (depth_image != NULL)
-    {
-        k4a_image_release(depth_image);
-    }
-    if (color_image != NULL)
-    {
-        k4a_image_release(color_image);
-    }
-    if (capture != NULL)
-    {
-        k4a_capture_release(capture);
-    }
-    if (transformation != NULL)
-    {
-        k4a_transformation_destroy(transformation);
-    }
+    thread th1(getPointCloud, transformation, depth_image, color_image, file_name);
+    th1.join();
+    std::cout << "point" << std::endl;
+//Exit:
+//    if (depth_image != NULL)
+//    {
+//        k4a_image_release(depth_image);
+//    }
+//    if (color_image != NULL)
+//    {
+//        k4a_image_release(color_image);
+//    }
+//    if (capture != NULL)
+//    {
+//        k4a_capture_release(capture);
+//    }
+//    std::cout << "exit" << std::endl;
     //if (device != NULL)
     //{
     //    k4a_device_close(device);
     //}
+    //std::this_thread::sleep_for(std::chrono::minutes(1));
     return returnCode;
 }
 
-
-
 int main(int argc, char* argv[])
 {
-    try {
-        std::string filename = "C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\pointClouds\\pc1"; //".\\pointClouds\\pc";
-        std::cout << filename << std::endl;
+    try { 
+        string filename = "C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\pointClouds\\pc"; //".\\pointClouds\\pc";
         kinect kinect;
-        int i = 0;
+        int i = 1;
+        bool working = false;
+
+        time_t timer;
+        time_t old_timer;
+
+        time(&old_timer);
 
         while (true) {
             // Update
@@ -181,10 +205,18 @@ int main(int argc, char* argv[])
             // Show
             kinect.show();
 
-            if (i == 0) {
-                capture(filename, kinect.device.handle(), kinect.calibration);
+            time(&timer);
+
+            if (difftime(timer, old_timer) == 30) {
+                string temp_filename = filename + std::to_string(i);
+                //thread th1(capture, temp_filename, kinect.device.handle(), kinect.calibration);
+                //th1.join();
+
+                async(std::launch::async, capture, temp_filename, kinect.device.handle(), kinect.calibration);
+                old_timer = timer;
                 i++;
             }
+
 
             // Wait Key
             constexpr int32_t delay = 30;
