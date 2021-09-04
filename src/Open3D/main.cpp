@@ -14,21 +14,18 @@ using namespace cv;
 using namespace open3d;  
 
 
-int matching(char* files[])
+int matching(string file1, string file2)
 {
     {
-        
-        std::cout << "start des Threads" << std::endl;
         open3d::geometry::PointCloud pcd1;
         open3d::geometry::PointCloud pcd2;
 
-        open3d::io::ReadPointCloud(files[1], pcd1);
+        open3d::io::ReadPointCloud(file1, pcd1);
 
-        open3d::io::ReadPointCloud(files[3], pcd2);
+        open3d::io::ReadPointCloud(file2, pcd2);
 
         auto dis_pcd1_pcd2 = pcd1.ComputePointCloudDistance(pcd2);
 
-        
         std::cout << "Value 1: " << dis_pcd1_pcd2[0] << std::endl;
         std::cout << "Value 2: " << dis_pcd1_pcd2[1] << std::endl;
 
@@ -37,7 +34,7 @@ int matching(char* files[])
 
             return 0;
         }
-        else if (dis_pcd1_pcd2[0] < 2 || dis_pcd1_pcd2[1] <3) {
+        else if (dis_pcd1_pcd2[0] < 2 || dis_pcd1_pcd2[1] < 3) {
 
             return 1;
         }
@@ -50,14 +47,11 @@ int matching(char* files[])
 // Aus einzelnen / doppelte machen //
 int main(int argc, char* argv[]) {
 
-    cout << argc << endl;
-    cout << argv[0] << endl;
-    cout << "Argv 1 " << argv[1] << endl;
-    cout << "Argv 2 " << argv[2] << endl;
-    cout << "Argv 3 " << argv[3] << endl;
+    string file1 =  argv[1];
+    string file2 =  argv[3];
 
     if (argc > 1) {
-        return matching(argv);
+        return matching(file1, file2);
     }
 
     return 3;

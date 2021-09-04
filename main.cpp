@@ -25,6 +25,8 @@
 using namespace std;
 
 string pcArray[2];
+int result = 6;
+bool saved = false;
 
 static bool point_cloud_depth_to_color(k4a_transformation_t transformation_handle,
     const k4a_image_t depth_image,
@@ -96,140 +98,45 @@ Exit:
     {
         k4a_transformation_destroy(transformation);
     }
-    std::cout << "exit" << std::endl;
 
+    saved = true;
     return returnCode;
-}
-
-static int capture(std::string output_dir, k4a_device_t device, k4a_calibration_t calibration) //k4a_device????
-{
-//    std::cout << "start" << std::endl;
-//    int returnCode = 1;
-//
-//    const int32_t TIMEOUT_IN_MS = 10000;
-//    k4a_transformation_t transformation = NULL;
-//    k4a_capture_t capture = NULL;
-//    std::string file_name = "";
-//    k4a_image_t depth_image = NULL;
-//    k4a_image_t color_image = NULL;
-//
-//    //k4a_calibration_t calibration;
-//    //if (K4A_RESULT_SUCCEEDED !=
-//    //    k4a_device_get_calibration(device, config.depth_mode, config.color_resolution, &calibration))
-//    //{
-//    //    printf("Failed to get calibration\n");
-//    //    goto Exit;
-//    //}
-//
-//    transformation = k4a_transformation_create(&calibration);
-//
-//
-//    // Get a capture
-//    switch (k4a_device_get_capture(device, &capture, TIMEOUT_IN_MS))
-//    {
-//    case K4A_WAIT_RESULT_SUCCEEDED:
-//        break;
-//    case K4A_WAIT_RESULT_TIMEOUT:
-//        printf("Timed out waiting for a capture\n");
-//        //goto Exit;
-//    case K4A_WAIT_RESULT_FAILED:
-//        printf("Failed to read a capture\n");
-//        //goto Exit;
-//    }
-//
-//    // Get a depth image
-//    depth_image = k4a_capture_get_depth_image(capture);
-//    if (depth_image == 0)
-//    {
-//        printf("Failed to get depth image from capture\n");
-//        //goto Exit;
-//    }
-//    std::cout << "depth" << std::endl;
-//    // Get a color image
-//    color_image = k4a_capture_get_color_image(capture);
-//    if (color_image == 0)
-//    {
-//        printf("Failed to get color image from capture\n");
-//        //goto Exit;
-//    }
-//    std::cout << "color" << std::endl;
-//    // Compute color point cloud by warping depth image into color camera geometry
-//#ifdef _WIN32
-//    file_name = output_dir + ".ply";
-//#else
-//    file_name = output_dir + "/depth_to_color.ply";
-//#endif
-//    thread th1(getPointCloud, transformation, depth_image, color_image, file_name);
-//    th1.join();
-//    std::cout << "point" << std::endl;
-////Exit:
-////    if (depth_image != NULL)
-////    {
-////        k4a_image_release(depth_image);
-////    }
-////    if (color_image != NULL)
-////    {
-////        k4a_image_release(color_image);
-////    }
-////    if (capture != NULL)
-////    {
-////        k4a_capture_release(capture);
-////    }
-////    std::cout << "exit" << std::endl;
-//    //if (device != NULL)
-//    //{
-//    //    k4a_device_close(device);
-//    //}
-//    //std::this_thread::sleep_for(std::chrono::minutes(1));
-//    return returnCode;
 }
 
 static int matching(string file_pc) {
 
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));
-    
     int matchResult = 6;
     int size = sizeof(pcArray);
 
     if (pcArray[0] == "") {
+        cout << "NULL" << endl;
         pcArray[0] = file_pc;
-        matchResult = 3;
+        matchResult = 0;
     }
     else if (pcArray[1] == "") {
         pcArray[1] = file_pc;
+        cout << "FIRST" << endl;
 
-        string file1 = pcArray[0];
-        string file2 = pcArray[1];
-
-        matchResult = system(("C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\executable\\PointCloudMatching.exe \" " + pcArray[0] + "\" HelloWorld \"" + pcArray[1]).c_str());
+        matchResult = system(("C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\executable\\PointCloudMatching.exe \"" + pcArray[0] + "\" HelloWorld \"" + pcArray[1]).c_str());
     }
-    else {
-        matchResult = 3;
-    }
-
-    //cout << matchResult << endl;
 
     switch (matchResult) {
     case 0:
-        return 0;
+        result = 0;
+        pcArray[1] = "";
+        return result;
         break;
     case 1:
+        result = 1;
         pcArray[0] = pcArray[1];
         pcArray[1] = "";
-        return 0;
+        return result;
         break;
     case 2:
+        result = 1;
         pcArray[0] = pcArray[1];
         pcArray[1] = "";
-        return 1;
-        break;
-    case 3:
-        return 2;
+        return result;
         break;
     default:
         pcArray[0] = "";
@@ -243,17 +150,16 @@ static int matching(string file_pc) {
 int main(int argc, char* argv[])
 {
     try { 
-        string filename = "C:/Users/merle/Documents/Projekte/3DRoomSurveillance/pointClouds/pc"; //".\\pointClouds\\pc";
+        std::string file_name = "";
+        string filename = "C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\pointClouds\\pc"; //".\\pointClouds\\pc";
         kinect kinect;
         int i = 1;
         bool working = false;
 
         time_t timer;
         time_t old_timer;
-        time_t join_timer;
 
         time(&old_timer);
-        time(&join_timer);
 
         while (true) {
             // Update
@@ -267,14 +173,14 @@ int main(int argc, char* argv[])
 
             time(&timer);
 
-            if (difftime(timer, old_timer) == 10) {
+            if (difftime(timer, old_timer) == 30) {
+
                 string output_dir = filename + std::to_string(i);
 
-                std::cout << "start" << std::endl;
                 int returnCode = 1;
 
                 const int32_t TIMEOUT_IN_MS = 10000;
-                std::string file_name = "";
+                
                 k4a_transformation_t transformation = NULL;
                 k4a_capture_t capture = NULL;
                 k4a_image_t depth_image = NULL;
@@ -298,14 +204,12 @@ int main(int argc, char* argv[])
                 {
                     printf("Failed to get depth image from capture\n");
                 }
-                std::cout << "depth" << std::endl;
                 color_image = k4a_capture_get_color_image(capture);
                 if (color_image == 0)
                 {
                     printf("Failed to get color image from capture\n");
 
                 }
-                std::cout << "color" << std::endl;
 #ifdef _WIN32
                 file_name = output_dir + ".ply";
 #else
@@ -313,17 +217,22 @@ int main(int argc, char* argv[])
 #endif
                 thread th1(getPointCloud, transformation, depth_image, color_image, file_name);
                 th1.detach();
-                //if (difftime(timer, join_timer) == 20) {
-                //    th1.join();
-                //    join_timer = timer;
-                //}
-                std::cout << "point" << std::endl;
-                //async(getPointCloud, transformation, depth_image, color_image, file_name);
-                old_timer = timer;
-                i++;
 
-                cout << "Main " << matching(file_name) << endl;
+                old_timer = timer;
                 
+                if (i >= 10) {
+                    i = 1;
+                }
+                else {
+                    i++;
+                }
+            }
+
+            if (saved) {
+                cout << result << endl;
+                thread t2(matching, file_name);
+                t2.detach();
+                saved = false;
             }
 
             
