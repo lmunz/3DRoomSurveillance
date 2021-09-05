@@ -299,6 +299,7 @@ inline void kinect::show_color()
 
     // Show Image
     const cv::String window_name = cv::format("color (kinect %d)", device_index);
+
     cv::imshow(window_name, color);
 }
 

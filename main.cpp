@@ -15,19 +15,56 @@
 #include <process.h>
 #include <stdio.h>
 #include "resource.h"
+#include <SDKDDKVer.h>
+#include <malloc.h>
+#include <memory.h>
+#include <tchar.h>
 
 #include "opencv2/core/utility.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/core/core.hpp"
 #include <k4a/k4a.h>
+#include <k4arecord/record.h>
 #include <k4arecord/playback.h>
 #include <string>
 #include "transformation_helpers.h"
-
 
 using namespace std;
 
 string pcArray[2];
 int result = 6;
 bool saved = false;
+
+//typedef struct
+//{
+//    uint32_t biSize;
+//    uint32_t biWidth;
+//    uint32_t biHeight;
+//    uint16_t biPlanes;
+//    uint16_t biBitCount;
+//    uint32_t biCompression;
+//    uint32_t biSizeImage;
+//    uint32_t biXPelsPerMeter;
+//    uint32_t biYPelsPerMeter;
+//    uint32_t biClrUsed;
+//    uint32_t biClrImportant;
+//} BITMAPINFOHEADER;
+
+void fill_bitmap_header(uint32_t width, uint32_t height, BITMAPINFOHEADER* out);
+void fill_bitmap_header(uint32_t width, uint32_t height, BITMAPINFOHEADER* out)
+{
+    out->biSize = sizeof(BITMAPINFOHEADER);
+    out->biWidth = width;
+    out->biHeight = height;
+    out->biPlanes = 1;
+    out->biBitCount = 16;
+    out->biCompression = FOURCC("YUY2");
+    out->biSizeImage = sizeof(uint16_t) * width * height;
+    out->biXPelsPerMeter = 0;
+    out->biYPelsPerMeter = 0;
+    out->biClrUsed = 0;
+    out->biClrImportant = 0;
+}
 
 //// Global Objects
 WNDCLASSEX HostWindowClass; /// Our Host Window Class Object
@@ -36,6 +73,7 @@ HINSTANCE hInstance = GetModuleHandle(NULL); /// Application Image Base Address
 HWND cpphwin_hwnd; /// Host Window Handle
 HWND wpf_hwnd; /// WPF Wrapper Handle
 #define HWIN_TITLE L"Camera Application"
+TCHAR greeting[] = _T("Hello, Windows desktop!");
 
 //// Global Configs
 const wchar_t cpphwinCN[] = L"CppMAppHostWinClass"; /// Host Window Class Name
@@ -50,6 +88,15 @@ LRESULT CALLBACK HostWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     case WM_CLOSE:
         DestroyWindow(hwnd);
         break;
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        // TODO: Zeichencode, der hdc verwendet, hier einfügen...
+        TextOut(hdc,5, 5,greeting, _tcslen(greeting));
+        EndPaint(hwnd, &ps);
+    }
+    break;
     case WM_DESTROY:
         isHWindowRunning = false;
         break;
@@ -195,6 +242,94 @@ Exit:
     return returnCode;
 }
 
+
+
+static void recording(k4a_device_t device, k4a_device_configuration_t device_config, k4a_calibration_t sensor_calibration, const char* filename) {
+    k4a_record_t recording;
+    k4a_record_create(filename, device, device_config, &recording);
+
+    uint32_t depth_width = (uint32_t)sensor_calibration.depth_camera_calibration.resolution_width;
+    uint32_t depth_height = (uint32_t)sensor_calibration.depth_camera_calibration.resolution_height;
+
+    BITMAPINFOHEADER codec_header;
+    fill_bitmap_header(depth_width, depth_height, &codec_header);
+
+    k4a_record_video_settings_t video_settings;
+    video_settings.width = depth_width;
+    video_settings.height = depth_height;
+    video_settings.frame_rate = 30;
+
+    k4a_record_add_custom_video_track(recording,
+        "PROCESSED_DEPTH",
+        "V_MS/VFW/FOURCC",
+        (uint8_t*)(&codec_header),
+        sizeof(codec_header),
+        &video_settings);
+
+    k4a_record_write_header(recording);
+
+    for (int frame = 0; frame < 100; frame++)
+    {
+        k4a_capture_t capture;
+        k4a_wait_result_t get_capture_result = k4a_device_get_capture(device, &capture, K4A_WAIT_INFINITE);
+        if (get_capture_result == K4A_WAIT_RESULT_SUCCEEDED)
+        {
+            // Write the capture to the built-in tracks
+            k4a_record_write_capture(recording, capture);
+
+            // Get the depth image from the capture so we can write a processed copy to our custom track.
+            k4a_image_t depth_image = k4a_capture_get_depth_image(capture);
+            if (depth_image)
+            {
+                // The YUY2 image format is the same stride as the 16-bit depth image, so we can modify it in-place.
+                uint8_t* depth_buffer = k4a_image_get_buffer(depth_image);
+                size_t depth_buffer_size = k4a_image_get_size(depth_image);
+                for (size_t i = 0; i < depth_buffer_size; i += 2)
+                {
+                    // Convert the depth value (16-bit, in millimeters) to the YUY2 color format.
+                    // The YUY2 format should be playable in video players such as VLC.
+                    uint16_t depth = (uint16_t)(depth_buffer[i + 1] << 8 | depth_buffer[i]);
+                    // Clamp the depth range to ~1 meter and scale it to fit in the Y channel of the image (8-bits).
+                    if (depth > 0x3FF)
+                    {
+                        depth_buffer[i] = 0xFF;
+                    }
+                    else
+                    {
+                        depth_buffer[i] = (uint8_t)(depth >> 2);
+                    }
+                    // Set the U/V channel to 128 (i.e. grayscale).
+                    depth_buffer[i + 1] = 128;
+                }
+
+                (k4a_record_write_custom_track_data(recording,
+                    "PROCESSED_DEPTH",
+                    k4a_image_get_device_timestamp_usec(depth_image),
+                    depth_buffer,
+                    (uint32_t)depth_buffer_size));
+
+                k4a_image_release(depth_image);
+            }
+
+            k4a_capture_release(capture);
+        }
+        else if (get_capture_result == K4A_WAIT_RESULT_TIMEOUT)
+        {
+            // TIMEOUT should never be returned when K4A_WAIT_INFINITE is set.
+            printf("k4a_device_get_capture() timed out!\n");
+            break;
+        }
+        else
+        {
+            printf("k4a_device_get_capture() returned error: %d\n", get_capture_result);
+            break;
+        }
+    }
+
+    k4a_record_flush(recording);
+    k4a_record_close(recording);
+}
+
 static int matching(string file_pc) {
 
     int matchResult = 6;
@@ -241,12 +376,14 @@ static int matching(string file_pc) {
 
 int main(int argc, char* argv[])
 {
-    createHostWindow();
-    thread t0(showHostWindow);
-    t0.detach();
+    //createHostWindow();
+    //thread t0(showHostWindow);
+    //t0.detach();
 
     try { 
         std::string file_name = "";
+        string recording_filename = "D:\\azureKinect\\capture";
+        string mkv = ".mkv";
         string filename = "C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\pointClouds\\pc"; //".\\pointClouds\\pc";
         kinect kinect;
         int i = 1;
@@ -269,9 +406,15 @@ int main(int argc, char* argv[])
 
             time(&timer);
 
+            
+
             if (difftime(timer, old_timer) == 30) {
 
                 string output_dir = filename + std::to_string(i);
+
+                string recording_output_dir = recording_filename + std::to_string(i) + ".mp4";
+
+                const char* charfile = recording_output_dir.c_str();
 
                 int returnCode = 1;
 
@@ -282,7 +425,11 @@ int main(int argc, char* argv[])
                 k4a_image_t depth_image = NULL;
                 k4a_image_t color_image = NULL;
                 k4a_device_t device = kinect.device.handle();
+                k4a_device_configuration_t device_config = kinect.device_configuration;
                 k4a_calibration_t calibration = kinect.calibration;
+
+                thread t_recording(recording, device, device_config, calibration, charfile);
+                t_recording.detach();
 
                 transformation = k4a_transformation_create(&calibration);
 
