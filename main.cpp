@@ -19,7 +19,7 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
-
+#include <cstdio> //DAS HIER!°!!!
 #include "opencv2/core/utility.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/core/core.hpp"
@@ -330,7 +330,7 @@ static void recording(k4a_device_t device, k4a_device_configuration_t device_con
     k4a_record_close(recording);
 }
 
-static int matching(string file_pc) {
+static int matching(string file_pc, string capture_name) {
 
     int matchResult = 6;
     int size = sizeof(pcArray);
@@ -351,23 +351,27 @@ static int matching(string file_pc) {
     case 0:
         result = 0;
         pcArray[1] = "";
+        cout << remove(capture_name) << endl;
         return result;
         break;
     case 1:
         result = 1;
         pcArray[0] = pcArray[1];
         pcArray[1] = "";
+        cout << remove(capture_name) << endl;
         return result;
         break;
     case 2:
         result = 1;
         pcArray[0] = pcArray[1];
         pcArray[1] = "";
+        greeting[] = _T("Veränderung in" + capture_name);
         return result;
         break;
     default:
         pcArray[0] = "";
         pcArray[1] = "";
+        cout << remove(capture_name) << endl;
         return 6;
         break;
     }
@@ -382,6 +386,7 @@ int main(int argc, char* argv[])
 
     try { 
         std::string file_name = "";
+        string recording_output_dir = "";
         string recording_filename = "D:\\azureKinect\\capture";
         string mkv = ".mkv";
         string filename = "C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\pointClouds\\pc"; //".\\pointClouds\\pc";
@@ -412,7 +417,7 @@ int main(int argc, char* argv[])
 
                 string output_dir = filename + std::to_string(i);
 
-                string recording_output_dir = recording_filename + std::to_string(i) + ".mp4";
+                string recording_output_dir = recording_filename + std::to_string(i) + ".mkv";
 
                 const char* charfile = recording_output_dir.c_str();
 
@@ -473,7 +478,7 @@ int main(int argc, char* argv[])
 
             if (saved) {
                 cout << result << endl;
-                thread t2(matching, file_name);
+                thread t2(matching, file_name, recording_output_dir);
                 t2.detach();
                 saved = false;
             }
