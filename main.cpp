@@ -19,7 +19,7 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
-#include <cstdio> //DAS HIER!°!!!
+#include <cstdio> 
 #include "opencv2/core/utility.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/core/core.hpp"
@@ -28,6 +28,10 @@
 #include <k4arecord/playback.h>
 #include <string>
 #include "transformation_helpers.h"
+#include <ctime>
+
+#pragma warning(disable:4996)
+
 
 using namespace std;
 
@@ -365,7 +369,10 @@ static int matching(string file_pc, string capture_name) {
         result = 1;
         pcArray[0] = pcArray[1];
         pcArray[1] = "";
-        greeting[] = _T("Veränderung in" + capture_name);
+        auto timenow =
+            chrono::system_clock::to_time_t(chrono::system_clock::now());
+
+        greeting[] = _T("Veränderung in" + capture_name + ctime(&timenow));
         return result;
         break;
     default:
