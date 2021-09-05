@@ -14,6 +14,7 @@
 #include <mutex>
 #include <process.h>
 #include <stdio.h>
+#include "resource.h"
 
 #include "opencv2/core/utility.hpp"
 #include <k4a/k4a.h>
@@ -27,6 +28,97 @@ using namespace std;
 string pcArray[2];
 int result = 6;
 bool saved = false;
+
+//// Global Objects
+WNDCLASSEX HostWindowClass; /// Our Host Window Class Object
+MSG loop_message; /// Loop Message for Host Window
+HINSTANCE hInstance = GetModuleHandle(NULL); /// Application Image Base Address
+HWND cpphwin_hwnd; /// Host Window Handle
+HWND wpf_hwnd; /// WPF Wrapper Handle
+#define HWIN_TITLE L"Camera Application"
+
+//// Global Configs
+const wchar_t cpphwinCN[] = L"CppMAppHostWinClass"; /// Host Window Class Name
+bool isHWindowRunning = false; /// Host Window Running State
+
+
+//// Host Window Callback, NOTE :Define This Before Your Entrypoint Function
+LRESULT CALLBACK HostWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg)
+    {
+    case WM_CLOSE:
+        DestroyWindow(hwnd);
+        break;
+    case WM_DESTROY:
+        isHWindowRunning = false;
+        break;
+    default:
+        return DefWindowProc(hwnd, msg, wParam, lParam);
+    }
+    return 0;
+}
+
+static int createHostWindow() {
+    /// Creating Icon Object From Resources, Don't forget to include resource.h!
+    HICON app_icon = LoadIcon(GetModuleHandle(0), MAKEINTRESOURCE(IDI_APPICON));
+
+    /// Defining Our Host Window Class
+    HostWindowClass.cbSize = sizeof(WNDCLASSEX); HostWindowClass.lpfnWndProc = HostWindowProc;
+    HostWindowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+    HostWindowClass.cbClsExtra = 0; HostWindowClass.style = 0;
+    HostWindowClass.cbWndExtra = 0;    HostWindowClass.hInstance = hInstance;
+    HostWindowClass.hIcon = app_icon; HostWindowClass.hIconSm = app_icon;
+    HostWindowClass.lpszClassName = cpphwinCN; HostWindowClass.lpszMenuName = NULL;
+
+    //// Register Window
+    if (!RegisterClassEx(&HostWindowClass))
+    {
+        cout << "Error, Code :" << GetLastError() << endl;
+        getchar(); return 0;
+    }
+
+    /// Creating Unmanaged Host Window
+    cpphwin_hwnd = CreateWindowEx(
+        WS_EX_CLIENTEDGE,
+        cpphwinCN,
+        HWIN_TITLE,
+        //GetSTR_Res(APPDATA_HWINDOW_NAME),
+        WS_THICKFRAME | WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, 800, 500,
+        NULL, NULL, hInstance, NULL);
+
+    /// Check if How Window is valid
+    if (cpphwin_hwnd == NULL)
+    {
+        cout << "Error, Code :" << GetLastError() << endl;
+        getchar(); return 0;
+    }
+}
+
+static void showHostWindow() {
+    /// Centering Host Window
+    RECT window_r; RECT desktop_r;
+    GetWindowRect(cpphwin_hwnd, &window_r); GetWindowRect(GetDesktopWindow(), &desktop_r);
+    int xPos = (desktop_r.right - (window_r.right - window_r.left)) / 2;
+    int yPos = (desktop_r.bottom - (window_r.bottom - window_r.top)) / 2;
+
+    /// Set Window Position
+    ::SetWindowPos(cpphwin_hwnd, 0, xPos, yPos, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+
+    /// Display Window
+    ShowWindow(cpphwin_hwnd, SW_SHOW);
+    UpdateWindow(cpphwin_hwnd);
+    BringWindowToTop(cpphwin_hwnd);
+    isHWindowRunning = true;
+
+    /// Adding Message Loop
+    while (GetMessage(&loop_message, NULL, 0, 0) > 0 && isHWindowRunning)
+    {
+        TranslateMessage(&loop_message);
+        DispatchMessage(&loop_message);
+    }
+}
 
 static bool point_cloud_depth_to_color(k4a_transformation_t transformation_handle,
     const k4a_image_t depth_image,
@@ -149,6 +241,10 @@ static int matching(string file_pc) {
 
 int main(int argc, char* argv[])
 {
+    createHostWindow();
+    thread t0(showHostWindow);
+    t0.detach();
+
     try { 
         std::string file_name = "";
         string filename = "C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\pointClouds\\pc"; //".\\pointClouds\\pc";

@@ -32,7 +32,7 @@ namespace NavigationDrawerPopUpMenu2
         {
             InitializeComponent();
 
-            CameraImage();
+            //CameraImage();
         }
 
         private void BtnDepthmap_Click(object sender, RoutedEventArgs e)
@@ -126,22 +126,7 @@ namespace NavigationDrawerPopUpMenu2
                                 this.displayImg.Source = outputColorBitmap;
                             }
 
-                            //ComputePointCloudCache(device.GetCalibration());
-
-
-
                         }
-
-                        //if (capture.Color != null)
-                        //{
-
-                        ////Working Depth and Color Image
-                        //var color = capture.Color;
-                        //var depth = capture.Depth;
-
-                        //displayImg.Source = BitmapSource.Create(color.WidthPixels, color.HeightPixels, 96, 96, PixelFormats.Bgr32, null, color.Memory.ToArray(), color.StrideBytes);
-                        //displayImg.Source = BitmapSource.Create(depth.WidthPixels, depth.HeightPixels, 96, 96, PixelFormats.Gray16, null, depth.Memory.ToArray(), depth.StrideBytes);
-                        //}
 
                     }
 
@@ -152,39 +137,6 @@ namespace NavigationDrawerPopUpMenu2
             }
         }
 
-
-        private async void ComputePointCloudCache(Calibration calibration)
-        {
-            using (Transformation transform = device.GetCalibration().CreateTransformation())
-            using (var fakeDepth = new Microsoft.Azure.Kinect.Sensor.Image(ImageFormat.Depth16, calibration.DepthCameraCalibration.ResolutionWidth, calibration.DepthCameraCalibration.ResolutionHeight))
-            {
-                MemoryMarshal.Cast<byte, ushort>(fakeDepth.Memory.Span).Fill(1000);
-                using(var pointCloudImage = transform.DepthImageToPointCloud(fakeDepth))
-                {
-                    //var pointCloudeBuffer = MemoryMarshal.Cast<byte, short>(pointCloudImage.Memory.Span);
-
-                    //pointCloudCache = new Vector3[calibration.DepthCameraCalibration.ResolutionHeight, calibration.DepthCameraCalibration.ResolutionWidth];
-                    //for(int k = 0, v= 0; v < calibration.DepthCameraCalibration.ResolutionHeight; ++v)
-                    //{
-                    //    for(int u = 0; u < calibration.DepthCameraCalibration.ResolutionWidth; ++u, k += 3)
-                    //    {
-                    //        var point = new Vector3(pointCloudeBuffer[k], pointCloudeBuffer[k + 1], pointCloudeBuffer[k + 2]) / 1000000;
-                    //        pointCloudCache[v, u] = point;
-                    //    }
-                    //}
-
-                    Task<BitmapSource> createPointCloudBitmapTask = Task.Run(() =>
-                    {
-                        BitmapSource source = BitmapSource.Create(pointCloudImage.WidthPixels, pointCloudImage.HeightPixels, 96, 96, PixelFormats.Bgra32, null, pointCloudImage.Memory.ToArray(), pointCloudImage.StrideBytes);
-
-                        source.Freeze();
-                        return source;
-                    });
-
-                    BitmapSource pointCloudBitmap = await createPointCloudBitmapTask.ConfigureAwait(true);
-                }
-            }
-        }
 
 
     }

@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Interop;
 
 namespace NavigationDrawerPopUpMenu2
 
@@ -19,8 +20,10 @@ namespace NavigationDrawerPopUpMenu2
     /// <summary>
     /// Interação lógica para MainWindow.xam
     /// </summary>
+    
     public partial class MainWindow : Window
     {
+
         public MainWindow()
         {
             InitializeComponent();
