@@ -26,8 +26,8 @@ int matching(string file1, string file2)
 
         auto dis_pcd1_pcd2 = pcd1.ComputePointCloudDistance(pcd2);
 
-        std::cout << "Value 1: " << dis_pcd1_pcd2[0] << std::endl;
-        std::cout << "Value 2: " << dis_pcd1_pcd2[1] << std::endl;
+        //std::cout << "Value 1: " << dis_pcd1_pcd2[0] << std::endl;
+        //std::cout << "Value 2: " << dis_pcd1_pcd2[1] << std::endl;
 
 
         if (dis_pcd1_pcd2[0] == 0 && dis_pcd1_pcd2[1] == 0) {

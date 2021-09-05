@@ -82,6 +82,8 @@ TCHAR greeting[] = _T("Hello, Windows desktop!");
 //// Global Configs
 const wchar_t cpphwinCN[] = L"CppMAppHostWinClass"; /// Host Window Class Name
 bool isHWindowRunning = false; /// Host Window Running State
+time_t timenow;
+int removeVariable;
 
 
 //// Host Window Callback, NOTE :Define This Before Your Entrypoint Function
@@ -334,19 +336,17 @@ static void recording(k4a_device_t device, k4a_device_configuration_t device_con
     k4a_record_close(recording);
 }
 
-static int matching(string file_pc, string capture_name) {
+static int matching(string file_pc, char capture_name[27]) {
 
     int matchResult = 6;
     int size = sizeof(pcArray);
 
     if (pcArray[0] == "") {
-        cout << "NULL" << endl;
         pcArray[0] = file_pc;
         matchResult = 0;
     }
     else if (pcArray[1] == "") {
         pcArray[1] = file_pc;
-        cout << "FIRST" << endl;
 
         matchResult = system(("C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\executable\\PointCloudMatching.exe \"" + pcArray[0] + "\" HelloWorld \"" + pcArray[1]).c_str());
     }
@@ -355,30 +355,30 @@ static int matching(string file_pc, string capture_name) {
     case 0:
         result = 0;
         pcArray[1] = "";
-        cout << remove(capture_name) << endl;
+        removeVariable = remove(capture_name);
         return result;
         break;
     case 1:
         result = 1;
         pcArray[0] = pcArray[1];
         pcArray[1] = "";
-        cout << remove(capture_name) << endl;
+        removeVariable = remove(capture_name);
         return result;
         break;
     case 2:
         result = 1;
         pcArray[0] = pcArray[1];
         pcArray[1] = "";
-        auto timenow =
+        timenow =
             chrono::system_clock::to_time_t(chrono::system_clock::now());
-
-        greeting[] = _T("Veränderung in" + capture_name + ctime(&timenow));
+        cout << "Veraenderung in " << capture_name << ctime(&timenow) << endl;
+        //greeting[] = _T("Veränderung in" + capture_name + ctime(&timenow));
         return result;
         break;
     default:
         pcArray[0] = "";
         pcArray[1] = "";
-        cout << remove(capture_name) << endl;
+        removeVariable = remove(capture_name);
         return 6;
         break;
     }
@@ -393,7 +393,8 @@ int main(int argc, char* argv[])
 
     try { 
         std::string file_name = "";
-        string recording_output_dir = "";
+        const char* charfile = "";
+        char charArray[27];
         string recording_filename = "D:\\azureKinect\\capture";
         string mkv = ".mkv";
         string filename = "C:\\Users\\merle\\Documents\\Projekte\\3DRoomSurveillance\\pointClouds\\pc"; //".\\pointClouds\\pc";
@@ -426,7 +427,8 @@ int main(int argc, char* argv[])
 
                 string recording_output_dir = recording_filename + std::to_string(i) + ".mkv";
 
-                const char* charfile = recording_output_dir.c_str();
+                charfile = recording_output_dir.c_str();
+                strcpy(charArray, recording_output_dir.c_str());
 
                 int returnCode = 1;
 
@@ -475,7 +477,7 @@ int main(int argc, char* argv[])
 
                 old_timer = timer;
                 
-                if (i >= 10) {
+                if (i > 10) {
                     i = 1;
                 }
                 else {
@@ -484,8 +486,7 @@ int main(int argc, char* argv[])
             }
 
             if (saved) {
-                cout << result << endl;
-                thread t2(matching, file_name, recording_output_dir);
+                thread t2(matching, file_name, charArray);
                 t2.detach();
                 saved = false;
             }
