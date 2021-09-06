@@ -362,7 +362,10 @@ static int matching(string file_pc, char capture_name[27]) {
         result = 1;
         pcArray[0] = pcArray[1];
         pcArray[1] = "";
-        removeVariable = remove(capture_name);
+        timenow =
+            chrono::system_clock::to_time_t(chrono::system_clock::now());
+        cout << "Veraenderung in " << capture_name << ctime(&timenow) << endl;
+        //removeVariable = remove(capture_name);
         return result;
         break;
     case 2:
