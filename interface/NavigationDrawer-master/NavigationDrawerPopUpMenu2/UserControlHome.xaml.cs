@@ -32,7 +32,7 @@ namespace NavigationDrawerPopUpMenu2
         {
             InitializeComponent();
 
-            //CameraImage();
+            CameraImage();
         }
 
         private void BtnDepthmap_Click(object sender, RoutedEventArgs e)
@@ -90,21 +90,21 @@ namespace NavigationDrawerPopUpMenu2
 
                                     if (depthBuffer[i] == 0)
                                     {
-                                        outputColorBuffer[i].R = 50;
-                                        outputColorBuffer[i].G = 50;
-                                        outputColorBuffer[i].B = 50;
+                                        outputColorBuffer[i].R = 200;
+                                        outputColorBuffer[i].G = 200;
+                                        outputColorBuffer[i].B = 200;
                                     }
-                                    else if (depthBuffer[i] > 10)
+                                    else if (depthBuffer[i] > 10 && depthBuffer[i] <= 500)
                                     {
                                         outputColorBuffer[i].R = 100;
                                         outputColorBuffer[i].G = 100;
                                         outputColorBuffer[i].B = 100;
                                     }
-                                    else if (depthBuffer[i] > 100)
+                                    else if (depthBuffer[i] > 500)
                                     {
-                                        outputColorBuffer[i].R = 200;
-                                        outputColorBuffer[i].G = 200;
-                                        outputColorBuffer[i].B = 200;
+                                        outputColorBuffer[i].R = 10;
+                                        outputColorBuffer[i].G = 10;
+                                        outputColorBuffer[i].B = 10;
                                     }
                                 }
 

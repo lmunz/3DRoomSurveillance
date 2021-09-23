@@ -274,7 +274,7 @@ static void recording(k4a_device_t device, k4a_device_configuration_t device_con
 
     k4a_record_write_header(recording);
 
-    for (int frame = 0; frame < 100; frame++)
+    for (int frame = 0; frame < 900; frame++)
     {
         k4a_capture_t capture;
         k4a_wait_result_t get_capture_result = k4a_device_get_capture(device, &capture, K4A_WAIT_INFINITE);
