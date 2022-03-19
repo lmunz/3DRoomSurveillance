@@ -8,7 +8,7 @@
 * [David Alexander Kring](https://github.com/dakring)
 * [Lukas Martin Munz](https://github.com/lmunz)
 * [Merle Struckmann](https://github.com/MerleStr)
-* 
+
 (Projektphase 2-3)
 * [Moritz Sylvius Langer](https://github.com/moritzLanger)
 
